@@ -60,6 +60,18 @@
           # The system closure alone, no bootable artifact. Fastest check that
           # the module evaluates and every unit builds.
           toplevel = self.nixosConfigurations.${system}.config.system.build.toplevel;
+
+          # Reproducible, dm-verity protected image built with systemd-repart.
+          # Needs no KVM, so unlike .#image this builds on an Apple Silicon VM.
+          verity-image =
+            (nixpkgs.lib.nixosSystem {
+              inherit system;
+              modules = [
+                self.nixosModules.default
+                ./nixos/configuration.nix
+                ./nixos/image-repart.nix
+              ];
+            }).config.system.build.image;
         });
 
       nixosModules.default = import ./nixos/module.nix self;

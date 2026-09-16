@@ -137,3 +137,46 @@ around it, cheapest first:
 
 A green run on that second job is what makes the phrase "reproducible NixOS
 system image" true.
+
+## Reproducible, integrity-protected image
+
+`nix build .#verity-image` produces a disk image whose root filesystem is
+read-only erofs, protected by a dm-verity Merkle tree, and assembled with
+`systemd-repart` rather than by booting a VM.
+
+```
+$ nix build .#verity-image -o result-verity
+$ grep roothash result-verity/repart-output.json
+"roothash" : "7a19e4ce445f6be65bccee001c4d128c70b643088de8be4a4f5b38f46b563148"
+```
+
+That root hash is the image's identity: it fixes every byte of the root
+filesystem, so any modification is detectable at read time.
+
+A hash is only a useful identity if the build is reproducible, otherwise it
+identifies one build machine rather than one set of sources. Two details in
+[`nixos/image-repart.nix`](nixos/image-repart.nix) secure that:
+
+- partition `UUID`s are pinned rather than generated,
+- `mkfs.erofs` runs with `--hard-dereference`, so a Nix store with hardlink
+  optimisation enabled yields the same inode count as one without it.
+
+Verify it:
+
+```
+$ nix build .#verity-image --rebuild
+checking outputs of '/nix/store/...-elfharden-1.drv'...
+$ echo $?
+0
+```
+
+`--rebuild` builds the derivation a second time and compares the result
+byte-for-byte. Exit code 0 means the two builds are identical.
+
+This target needs no KVM, so it builds inside a VM on Apple Silicon, where
+`.#image` (qcow2) cannot. On Ubuntu hosts, `systemd-repart` needs nested user
+namespaces: `sudo sysctl kernel.apparmor_restrict_unprivileged_userns=0`.
+
+The approach follows Contrast's pod-VM images
+([`packages/nixos/image.nix`](https://github.com/edgelesssys/contrast/blob/main/packages/nixos/image.nix)),
+which uses the same repart, erofs and dm-verity combination for the same reason.

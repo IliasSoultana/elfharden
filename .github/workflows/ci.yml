@@ -69,6 +69,20 @@ jobs:
       - name: Show the generated systemd unit
         run: cat result-toplevel/etc/systemd/system/elfharden.service
 
+      # systemd-repart needs nested user namespaces.
+      - name: Allow unprivileged user namespaces
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+
+      - name: Build the reproducible verity image
+        run: nix build .#verity-image --print-build-logs -o result-verity
+
+      - name: Show the dm-verity root hash
+        run: grep roothash result-verity/repart-output.json
+
+      # Builds the derivation a second time and compares byte-for-byte.
+      - name: Prove the image build is reproducible
+        run: nix build .#verity-image --rebuild --print-build-logs
+
       - name: Build the NixOS qcow2 image
         run: nix build .#image --print-build-logs -o result-image
 

@@ -4,3 +4,4 @@ result-*
 
 # Go build output
 /elfharden
+result-verity
