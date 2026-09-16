@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  go:
+    name: Go build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -v ./...
+
+      - name: Build
+        run: go build -o elfharden .
+
+      # Scanning the runner's own binaries is a real end-to-end check: it
+      # proves the tool parses production ELF files, not just test fixtures.
+      - name: Smoke test against system binaries
+        run: |
+          ./elfharden /usr/bin | head -20
+          ./elfharden -json /usr/bin/ls
+
+  nix:
+    name: Nix flake and NixOS image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      # Packing a qcow2 runs a QEMU VM, so the build needs /dev/kvm. GitHub's
+      # Linux runners have the device but do not grant access to the runner
+      # user by default.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - name: Flake check
+        run: nix flake check --all-systems
+
+      - name: Build the scanner
+        run: nix build .#elfharden --print-build-logs
+
+      - name: Build the system closure
+        run: nix build .#toplevel --print-build-logs -o result-toplevel
+
+      - name: Show the generated systemd unit
+        run: cat result-toplevel/etc/systemd/system/elfharden.service
+
+      - name: Build the NixOS qcow2 image
+        run: nix build .#image --print-build-logs -o result-image
+
+      - name: Report image size
+        run: ls -lh result-image/
+
+      - name: Upload image
+        uses: actions/upload-artifact@v4
+        with:
+          name: nixos-scanner-image
+          path: result-image/*
+          if-no-files-found: warn
