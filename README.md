@@ -1,5 +1,7 @@
 # elfharden
 
+[![CI](https://github.com/IliasSoultana/elfharden/actions/workflows/ci.yml/badge.svg)](https://github.com/IliasSoultana/elfharden/actions/workflows/ci.yml)
+
 Scans ELF binaries for the four standard hardening properties and reports them
 as a table or as JSON.
 
@@ -180,3 +182,13 @@ namespaces: `sudo sysctl kernel.apparmor_restrict_unprivileged_userns=0`.
 The approach follows Contrast's pod-VM images
 ([`packages/nixos/image.nix`](https://github.com/edgelesssys/contrast/blob/main/packages/nixos/image.nix)),
 which uses the same repart, erofs and dm-verity combination for the same reason.
+
+## Related
+
+The same scanner, and the same question asked at other stages:
+
+- [hardening-check](https://github.com/IliasSoultana/hardening-check) - Python, `pyelftools`
+- [elfharden](https://github.com/IliasSoultana/elfharden) - Go, `debug/elf`
+- [elfharden-rs](https://github.com/IliasSoultana/elfharden-rs) - Rust, `goblin`
+- [llvm-hardeningpass](https://github.com/IliasSoultana/llvm-hardeningpass) - at IR level, before linking
+- [diversity-poc](https://github.com/IliasSoultana/diversity-poc) - compiler-level layout diversification
