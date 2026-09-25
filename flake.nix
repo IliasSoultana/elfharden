@@ -15,7 +15,7 @@
       supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
       # Disk images can only be produced on Linux, but either architecture
-      # works -- an Apple Silicon VM builds the aarch64 image natively.
+      # works, an Apple Silicon VM builds the aarch64 image natively.
       imageSystems = [ "x86_64-linux" "aarch64-linux" ];
     in
     {
@@ -50,7 +50,7 @@
           };
 
           # ISO images are assembled with xorriso rather than a VM, so this
-          # builds anywhere -- including inside a non-nesting VM.
+          # builds anywhere, including inside a non-nesting VM.
           iso = nixos-generators.nixosGenerate {
             inherit system;
             format = "install-iso";

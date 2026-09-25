@@ -100,7 +100,7 @@ nix develop                    # Go toolchain + qemu shell
 
 The service runs under `DynamicUser` with `ProtectSystem=strict`,
 `PrivateNetwork`, `MemoryDenyWriteExecute` and a `@system-service` syscall
-filter — it can read binaries and write one report, and nothing else.
+filter, it can read binaries and write one report, and nothing else.
 
 Configure it through the module options:
 
@@ -123,18 +123,18 @@ around it, cheapest first:
 1. **Let CI do it.** `.github/workflows/ci.yml` builds the scanner and the
    qcow2 image on `ubuntu-latest` and uploads the image as an artifact. Push
    the branch and read the logs.
-2. **A Linux VM** — UTM, Lima or OrbStack, then build inside it.
-3. **nix-darwin's `linux-builder`** — `nix.linux-builder.enable = true` gives
+2. **A Linux VM** (UTM, Lima or OrbStack), then build inside it.
+3. **nix-darwin's `linux-builder`**, `nix.linux-builder.enable = true` gives
    Nix a local Linux VM to delegate Linux derivations to.
 
 ## CI
 
 `.github/workflows/ci.yml` runs two jobs on every push:
 
-- **go** — `go vet`, `go test`, `go build`, then a smoke test scanning the
+- **go**, `go vet`, `go test`, `go build`, then a smoke test scanning the
   runner's own `/usr/bin` so the parser is exercised against real production
   binaries rather than only synthetic fixtures.
-- **nix** — `nix flake check --all-systems`, builds the package, builds the
+- **nix**, `nix flake check --all-systems`, builds the package, builds the
   qcow2 image, and uploads it as a workflow artifact.
 
 A green run on that second job is what makes the phrase "reproducible NixOS
